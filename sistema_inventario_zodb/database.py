@@ -17,7 +17,6 @@ class DatabaseManager:
         self.connection = self.db.open()
         self.root = self.connection.root()
 
-        # Inicializar contenedores con OOBTree (árboles B persistentes de alto rendimiento)
         if "productos" not in self.root:
             self.root["productos"] = OOBTree()
         if "proveedores" not in self.root:
