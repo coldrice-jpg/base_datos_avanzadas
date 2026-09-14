@@ -1,6 +1,7 @@
-from typing import List, Tuple
 from database import DatabaseManager
-from modelos import Venta
+from modelos import Producto, Venta
+from excepciones import ValidacionDatosError
+from typing import List, Tuple
 from excepciones import (
     StockInsuficienteError,
     EntidadNoEncontradaError,
@@ -9,7 +10,6 @@ from excepciones import (
 
 
 class VentaService:
-    """Orquesta las operaciones de venta y descuento de stock."""
 
     def __init__(self, db_manager: DatabaseManager) -> None:
         self._db = db_manager
@@ -17,13 +17,6 @@ class VentaService:
     def registrar_venta(
         self, folio: str, cliente_id: str, items: List[Tuple[str, int]]
     ) -> Venta:
-        """
-        Registra una venta atómicamente.
-
-        :param folio: Identificador único de la venta.
-        :param cliente_id: Clave del cliente.
-        :param items: Lista de tuplas (codigo_producto, cantidad).
-        """
         if not items:
             raise ValidacionDatosError("La venta debe incluir al menos un producto.")
 
@@ -37,7 +30,6 @@ class VentaService:
 
             venta = Venta(folio=folio, cliente=cliente)
 
-            # Validar stock previo a la aplicación de cambios
             for cod_prod, cantidad in items:
                 producto = root["productos"].get(cod_prod)
                 if not producto:
@@ -48,7 +40,6 @@ class VentaService:
                         f"Disponible: {producto.stock}, Solicitado: {cantidad}"
                     )
 
-            # Aplicar deducciones de stock y ensamblar venta
             for cod_prod, cantidad in items:
                 producto = root["productos"][cod_prod]
                 producto.actualizar_stock(-cantidad)
@@ -56,3 +47,21 @@ class VentaService:
 
             root["ventas"][folio] = venta
             return venta
+
+class InventarioService:
+    def __init__(self, db_manager: DatabaseManager) -> None:
+        self._db = db_manager
+
+    def registrar_producto(self, codigo: str, nombre: str, precio: float, stock: int) -> Producto:
+        if precio <= 0:
+            raise ValidacionDatosError("El precio debe ser un valor positivo.")
+        if stock < 0:
+            raise ValidacionDatosError("El stock inicial no puede ser negativo.")
+
+        with self._db.get_connection() as root:
+            if codigo in root["productos"]:
+                raise ValidacionDatosError(f"El producto con código '{codigo}' ya existe.")
+
+            nuevo_producto = Producto(codigo=codigo, nombre=nombre, precio=precio, stock=stock)
+            root["productos"][codigo] = nuevo_producto
+            return nuevo_producto
