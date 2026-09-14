@@ -1,9 +1,10 @@
+"""Punto de entrada principal para la gestión de la tienda."""
+
 import os
 import sys
 
 from database import DatabaseManager
-from servicios import InventarioService
-from servicios import VentaService
+from servicios import InventarioService, VentaService
 from consultas import InventarioQueries
 from excepciones import TiendaError
 
@@ -15,9 +16,9 @@ UMBRAL_STOCK_BAJO = 5
 def inicializar_datos_prueba(
     inventario_service: InventarioService, db_manager: DatabaseManager
 ) -> None:
+    """Registra datos iniciales de catálogo y clientes para pruebas si la BD está vacía."""
     with db_manager.get_connection() as root:
         if not root["productos"]:
-            # Registro de productos iniciales
             inventario_service.registrar_producto("P001", "Laptop Pro 14", 18500.00, 8)
             inventario_service.registrar_producto("P002", "Mouse Inalámbrico", 450.00, 3)
             inventario_service.registrar_producto("P003", "Teclado Mecánico", 1200.00, 15)
@@ -29,6 +30,7 @@ def inicializar_datos_prueba(
 
 
 def main() -> None:
+    """Ejecuta el ciclo principal y demuestra el flujo de la aplicación."""
     os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
     db_manager = DatabaseManager(filepath=DB_PATH)
     db_manager.initialize()
@@ -47,8 +49,8 @@ def main() -> None:
         print("\n=== REGISTRANDO VENTA ===")
         folio_venta = "V-1001"
         items_a_comprar = [
-            ("P001", 1), 
-            ("P002", 2), 
+            ("P001", 1),
+            ("P002", 2),
         ]
 
         venta = venta_service.registrar_venta(
@@ -63,9 +65,12 @@ def main() -> None:
         print(f"TOTAL: ${venta.total:,.2f}")
 
         print("\n=== PRODUCTOS CON BAJO STOCK (Alerta <= 5) ===")
-        bajos = inventario_queries.productos_bajo_stock(umbral=UMBRAL_STOCK_BAJO)
-        for prod in bajos:
+        for prod in inventario_queries.productos_bajo_stock(umbral=UMBRAL_STOCK_BAJO):
             print(f"! [ALERTA] {prod.nombre}: solo quedan {prod.stock} unidades")
+
+        print("\n=== REPORTE: PRODUCTOS MÁS VENDIDOS ===")
+        for nombre, cant in inventario_queries.productos_mas_vendidos():
+            print(f"- {nombre}: {cant} piezas vendidas")
 
     except TiendaError as error_dominio:
         print(f"\n[Error de Operación]: {error_dominio}", file=sys.stderr)
