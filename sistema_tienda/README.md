@@ -28,3 +28,19 @@ El sistema se diseñó bajo una separación estricta de responsabilidades:
    ```bash
    git clone <URL_DEL_REPOSITORIO>
    cd sistema_tienda
+
+2. **Crear y activar un entorno virtual:**
+   - En Linux/macOS:
+     ```bash
+     python3 -m venv venv
+     source venv/bin/activate
+     ```
+   - En Windows:
+     ```bash
+     python -m venv venv
+     venv\Scripts\activate
+     ```
+
+3. **Instalar dependencias:**
+   ```bash
+   pip install -r requirements.txt
